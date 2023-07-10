@@ -1,0 +1,153 @@
+Switch(config)# VLAN 10
+Switch(config)# exit
+Switch(config)# VLAN 20
+Switch(config)# exit
+Switch(config)# VLAN 30
+Switch(config)# exit
+
+
+Switch#show vlan brief 
+  
+
+
+
+Switch# configure terminal
+
+Switch(config)#interface fastethernet 0/1
+Switch(config-if)#switchport access vlan 10
+Switch(config-if)#switchport mode access
+Switch(config-if)#exit
+
+Switch(config)#interface fastethernet 0/2
+Switch(config-if)#switchport access vlan 20
+Switch(config-if)#switchport mode access 
+Switch(config-if)#exit
+
+Switch(config)#interface fastethernet 0/3
+Switch(config-if)#switchport access vlan 10
+Switch(config-if)#switchport mode access 
+Switch(config-if)#end
+
+
+
+Switch#show vlan brief 
+ 
+
+Switch#conf t
+
+Switch(config)#interface gigabitethernet 0/1
+Switch(config-if)#no shutdown
+
+Switch(config-if)#switchport mode trunk
+Switch(config-if)#exit
+Switch(config)#exit
+
+
+
+Switch#show run
+
+    
+
+
+Switch#copy running-config startup-config 
+
+
+  
+####Go to the Router0 and go to CLI tab and type no
+ 
+
+
+
+
+Router>enable
+Router#conf t
+Router(config)#interface gigabitEthernet 0/0
+Router(config-if)#no shutdown
+
+
+Router(config-if)#exit
+Router(config)#interface gigabitEthernet 0/0.10
+
+
+Router(config-subif)#encapsulation dot1Q 10
+Router(config-subif)#ip address 192.168.10.1 255.255.255.0
+Router(config-subif)#exit
+Router(config)#interface gigabitEthernet 0/0.20
+
+
+Router(config-subif)#encapsulation dot1Q 20
+Router(config-subif)#ip address 192.168.20.1 255.255.255.0
+Router(config-subif)#exit
+Router(config)#interface gigabitEthernet 0/0.30
+
+
+Router(config-subif)#encapsulation dot1Q 30
+Router(config-subif)#ip address 192.168.30.1 255.255.255.0
+Router(config-subif)#
+Router(config-subif)#encapsulation dot1Q 10
+
+
+Router(config-subif)#shutdown
+
+
+Router(config-subif)#exit
+Router(config)#no interface gigabitethernet 0/0.30
+Router(config)#end
+
+
+
+
+Router#show ip route
+ 
+
+Switch>enable
+Switch#show vlan brief 
+ 
+Switch#conf t
+Switch(config)#vlan 30
+Switch(config-vlan)#exit
+
+Switch(config)#interface fastethernet 0/3
+Switch(config-if)#switchport access vlan 30
+Switch(config-if)#switchport mode access
+Switch(config-if)#exit
+Switch(config)#exit
+
+
+Switch#show vlan brief
+ 
+
+Router#conf t
+Router(config)#interface gigabitethernet 0/0.30
+Router(config-subif)#encapsulation dot1Q 30
+Router(config-subif)#ip address 192.168.30.1 255.255.255.0
+Router(config-subif)#exit
+Router(config)#exit
+
+Router#show ip route
+ 
+
+Switch#copy running-config startup-config
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

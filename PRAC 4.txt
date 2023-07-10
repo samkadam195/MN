@@ -1,0 +1,360 @@
+###Router R1
+CONF T
+hostname R1
+interface Loopback 0
+description R1 LAN
+ip address 192.168.1.1 255.255.255.0
+EXIT
+interface Serial3/0
+description R1 --> R2
+ip address 10.1.1.1 255.255.255.252
+clock rate 128000
+no shutdown
+exit
+end
+ 
+
+###Router R2
+CONF T
+hostname R2
+interface Serial3/0
+description R2 --> R1
+ip address 10.1.1.2 255.255.255.252
+no shutdown
+exit
+interface Serial3/1
+description R2 --> R3
+ip address 10.2.2.1 255.255.255.252
+clock rate 128000
+no shutdown
+exit
+end
+ 
+
+###Router R3
+CONF T
+hostname R3
+interface Loopback0
+description R3 LAN
+ip address 192.168.3.1 255.255.255.0
+exit
+interface Serial3/1
+description R3 --> R2
+ip address 10.2.2.2 255.255.255.252
+no shutdown
+exit
+end
+ 
+
+R1(config)# ip route 0.0.0.0 0.0.0.0 10.1.1.2
+ 
+
+R3(config)# ip route 0.0.0.0 0.0.0.0 10.2.2.1
+ 
+
+R2(config)# ip route 192.168.1.0 255.255.255.0 10.1.1.1
+R2(config)# ip route 192.168.3.0 255.255.255.0 10.2.2.2
+ 
+
+R1#tclsh
+foreach address {
+192.168.1.1
+10.1.1.1
+10.1.1.2
+10.2.2.1
+10.2.2.2
+192.168.3.1
+} { ping $address }
+ 
+
+
+R1(config)# security passwords min-length 10
+
+R1(config)# enable secret class12345
+ 
+
+###Router R1
+conf t
+line console 0
+password ciscoconpass
+exec-timeout 5 0
+login
+logging synchronous
+exit
+ 
+line vty 0 4
+password ciscovtypass
+exec-timeout 5 0
+login
+exit
+ 
+line aux 0
+no exec
+end
+ 
+
+###Router R1
+conf t
+service password-encryption
+banner motd $Unauthorized access strictly prohibited!$
+ 
+
+username JR-ADMIN secret class12345
+username ADMIN secret class54321
+ 
+
+line console 0
+login local
+exit
+ 
+
+line vty 0 4
+login local
+end
+ 
+
+###Router R3
+username JR-ADMIN secret class12345
+username ADMIN secret class54321
+ 
+line console 0
+login local
+exit
+ 
+
+line vty 0 4
+login local
+end
+ 
+
+R1# telnet 10.2.2.2
+ 
+
+
+###Router R1
+CONF T
+aaa new-model
+ 
+radius server RADIUS-1
+address ipv4 192.168.1.101
+key RADIUS-1-pa55w0rd
+exit
+ 
+radius server RADIUS-2
+address ipv4 192.168.1.102
+key RADIUS-2-pa55w0rd
+exit
+ 
+
+aaa group server radius RADIUS-GROUP
+server name RADIUS-1
+server name RADIUS-2
+exit
+ 
+
+
+R1(config)# aaa authentication login default group RADIUS-GROUP local
+ 
+
+R1(config)# aaa authentication login TELNET-LOGIN group RADIUS-GROUP local-case
+ 
+
+###Router R1
+CONF T
+line vty 0 4
+login authentication TELNET-LOGIN
+exit
+ 
+
+###Router R3
+
+conf t
+aaa new-model
+ 
+radius server RADIUS-1
+address ipv4 192.168.1.101
+key RADIUS-1-pa55w0rd
+exit
+
+radius server RADIUS-2
+address ipv4 192.168.1.102
+key RADIUS-2-pa55w0rd
+exit
+
+aaa group server radius RADIUS-GROUP
+server name RADIUS-1
+server name RADIUS-2
+exit
+
+aaa authentication login default group RADIUS-GROUP local
+ 
+aaa authentication login TELNET-LOGIN group RADIUS-GROUP local-case
+ 
+
+line vty 0 4
+login authentication TELNET-LOGIN
+exit
+
+
+
+R1# telnet 10.2.2.2
+Username: ADMIN
+Password: class54321
+ 
+
+###Router R1
+conf t
+ip domain-name ccnasecurity.com
+crypto key zeroize rsa
+ 
+crypto key generate rsa general-keys modulus 1024
+ip ssh version 2
+ 
+line vty 0 4
+transport input ssh
+end
+ 
+
+R1# show ip ssh
+ 
+
+
+
+####Router R3
+conf t
+ip domain-name ccnasecurity.com
+ 
+crypto key zeroize rsa
+ 
+crypto key generate rsa general-keys modulus 1024
+ 
+ip ssh version 2
+ 
+line vty 0 4
+transport input ssh
+end
+ 
+R3# show ip ssh
+ 
+
+
+R1# ssh -l ADMIN 10.2.2.2
+Password:
+R3>
+R3>en
+
+ 
+
+###Router R1
+CONF T
+service password-encryption
+hostname R1
+security passwords min-length 10
+enable secret 5 $1$t6eK$FZ.JdmMLj8QSgNkpChyZz.
+aaa new-model
+aaa group server radius RADIUS-GROUP
+server name RADIUS-1
+server name RADIUS-2
+$ication login default group RADIUS-GROUP local                 
+$ication login TELNET-LOGIN group RADIUS-GROUP local-case                 
+ip domain name ccnasecurity.com
+username JR-ADMIN secret 5 $1$0u0q$lwimCZIAuQtV4C1ezXL1S0
+username ADMIN secret 5 $1$NSVD$/YjzB7Auyes1sAt4qMfpd.
+ip ssh version 2
+interface Loopback0
+description R1 LAN
+ip address 192.168.1.1 255.255.255.0
+interface Serial3/0
+description R1 --> R2
+ip address 10.1.1.1 255.255.255.252
+no fair-queue
+ip route 0.0.0.0 0.0.0.0 10.1.1.2
+radius server RADIUS-1
+$4 192.168.1.101 auth-port 1645 acct-port 1646             
+key 7 107C283D2C2221465D493A2A717D24653017
+radius server RADIUS-2
+$4 192.168.1.102 auth-port 1645 acct-port 1646              
+R1(config-radius-server)#key 7 03367A2F2F3A12011C44090442471C5C162E
+R1(config-radius-server)#$ ^CUnauthorized access strictly prohibited!^C       
+
+conf t     
+line con 0
+exec-timeout 5 0
+password 7 070C285F4D061A0A19020A1F17
+logging synchronous
+line aux 0
+no exec
+password 7 060506324F411F0D1C0713181F
+login authentication TELNET-LOGIN
+transport input ssh
+end
+ 
+
+
+
+####Router R2
+conf t
+hostname R2
+enable secret 5 $1$DJS7$xvJDW87zLs8pSJDFUlCPB1
+interface Serial3/0
+description R2 --> R1
+ip address 10.1.1.2 255.255.255.252
+no fair-queue
+clock rate 2000000
+interface Serial3/1
+description R2 --> R3
+ip address 10.2.2.1 255.255.255.252
+clock rate 128000
+ip route 192.168.1.0 255.255.255.0 10.1.1.1
+ip route 192.168.3.0 255.255.255.0 10.2.2.2
+line con 0
+exec-timeout 0 0
+logging synchronous
+line vty 0 4
+password cisco
+login
+
+ 
+
+###Router R3
+conf t
+service password-encryption
+security passwords min-length 10
+enable secret 5 $1$5OY4$4J6VFlvGNKjwQ8XtajgUk1
+aaa new-model
+aaa group server radius RADIUS-GROUP
+server name RADIUS-1
+server name RADIUS-2
+$ication login default group RADIUS-GROUP local                
+$ication login TELNET-LOGIN group RADIUS-GROUP local-case         
+ip domain name ccnasecurity.com
+username JR-ADMIN secret 5 $1$b4m1$RVmjL9S3gxKh1xr8qzNqr/
+username ADMIN secret 5 $1$zGV7$pVgSEbinvXQ7f7uyxeKBj0
+ip ssh version 2
+interface Loopback0
+description R3 LAN
+ip address 192.168.3.1 255.255.255.0
+interface Serial3/1
+description R3 --> R2
+ip address 10.2.2.2 255.255.255.252
+ip route 0.0.0.0 0.0.0.0 10.2.2.1
+radius server RADIUS-1
+$4 192.168.1.101 auth-port 1645 acct-port 1646             
+key 7 01212720723E354270015E084C5000421908
+radius server RADIUS-2
+$4 192.168.1.102 auth-port 1645 acct-port 1646            
+key 7 003632222D6E384B5D6C5C4F5C4C1247000F
+$ ^CUnauthorized access strictly prohibited!^C             
+line con 0
+exec-timeout 5 0
+password 7 104D000A0618110402142B3837
+logging synchronous
+line aux 0
+no exec
+line vty 0 4
+exec-timeout 5 0
+password 7 070C285F4D060F110E020A1F17
+login authentication TELNET-LOGIN
+transport input ssh
+end
+
